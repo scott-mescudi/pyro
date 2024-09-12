@@ -9,9 +9,8 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 )
 
-// Function to generate a PGP key pair (public and private keys).
+
 func generateKeyPair() (string, string, error) {
-	// Create a new entity (key pair) with the given identity and email.
 	entity, err := openpgp.NewEntity("Test User", "test", "test@example.com", nil)
 	if err != nil {
 		return "", "", err
@@ -47,31 +46,15 @@ func generateKeyPair() (string, string, error) {
 
 
 func main() {
-	// x := []string{"tom", "json", "mark"}
+	publicKey, privateKey, err := generateKeyPair()
+	if err != nil {
+		fmt.Println("Error generating key pair:", err)
+		return
+	}
 
-	// for _, i := range x{
-	// 	publicKey, privateKey, err := generateKeyPair()
-	// 	if err != nil {
-	// 		fmt.Println("Error generating key pair:", err)
-	// 		return
-	// 	}
+	file, _:= os.Create("anish_public.asc")
+	file.Write([]byte(publicKey))
 
-	// 	file, _:= os.Create("D:\\pgp_messanger\\keys\\public_keys\\" + i + "_public.asc")
-	// 	file.Write([]byte(publicKey))
-
-	// 	file, _ = os.Create("D:\\pgp_messanger\\privkeys\\" + i + "_private.asc")
-	// 	file.Write([]byte(privateKey))
-	// }
-
-		publicKey, privateKey, err := generateKeyPair()
-		if err != nil {
-			fmt.Println("Error generating key pair:", err)
-			return
-		}
-
-		file, _:= os.Create("anish_public.asc")
-		file.Write([]byte(publicKey))
-
-		file, _ = os.Create("anish_private.asc")
-		file.Write([]byte(privateKey))
+	file, _ = os.Create("anish_private.asc")
+	file.Write([]byte(privateKey))
 }

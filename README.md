@@ -35,7 +35,7 @@ To use the program, execute the Go file with various flags and options. Below ar
 This command creates the necessary directories for key management.
 
 ```bash
-go run main.go -init
+./GO-pgp -init
 ```
 
 ### 2. List PGP Keys
@@ -46,7 +46,7 @@ List the keys in different directories. Available options:
 - `all` - Lists all available keys.
 
 ```bash
-go run main.go -list vault
+./GO-pgp -list vault
 ```
 
 ### 3. Add a PGP Key
@@ -54,7 +54,7 @@ go run main.go -list vault
 Add a new key manually to one of the directories. You can add it to `external`, `vault-private`, or `vault-public`.
 
 ```bash
-go run main.go -add mykey external
+./GO-pgp -add mykey external
 ```
 
 The program will allow you to enter the PGP key content line-by-line. Type `:wq` to save and exit.
@@ -64,7 +64,7 @@ The program will allow you to enter the PGP key content line-by-line. Type `:wq`
 Move a key file to another directory.
 
 ```bash
-go run main.go -mv mykey vault-private
+./GO-pgp -mv mykey vault-private
 ```
 
 ### 5. Remove a PGP Key
@@ -72,7 +72,7 @@ go run main.go -mv mykey vault-private
 Remove a key from one of the directories.
 
 ```bash
-go run main.go -rm mykey external
+./GO-pgp -rm mykey external
 ```
 
 ### 6. Copy a Key to Clipboard
@@ -80,7 +80,7 @@ go run main.go -rm mykey external
 Copy the content of a key file to the system clipboard.
 
 ```bash
-go run main.go -copy mykey vault-private
+./GO-pgp -copy mykey vault-private
 ```
 
 ### 7. Encrypt a Message
@@ -88,7 +88,7 @@ go run main.go -copy mykey vault-private
 Encrypt a message using a public key. Provide the key name and the directory where it's stored.
 
 ```bash
-go run main.go -encrypt recipient_pubkey external
+./GO-pgp -encrypt recipient_pubkey external
 ```
 
 The program will prompt you to enter the message. Type `:wq` to finish, and the encrypted message will be printed and copied to the clipboard.
@@ -98,7 +98,7 @@ The program will prompt you to enter the message. Type `:wq` to finish, and the 
 Decrypt a message using a private key. The private key must be located in the `vault-private` directory.
 
 ```bash
-go run main.go -decrypt my_private_key
+./GO-pgp -decrypt my_private_key
 ```
 
 The program will prompt you to enter the encrypted message. Type `:wq` to finish, and the decrypted message will be printed and copied to the clipboard.
@@ -140,22 +140,22 @@ The program will prompt you to enter the encrypted message. Type `:wq` to finish
 
 - **Initialize the tool**:
   ```bash
-  go run main.go -init
+  ./GO-pgp -init
   ```
 
 - **Add a new key to the external directory**:
   ```bash
-  go run main.go -add mykey external
+  ./GO-pgp -add mykey external
   ```
 
 - **Encrypt a message using an external public key**:
   ```bash
-  go run main.go -encrypt recipient_pubkey external
+  ./GO-pgp -encrypt recipient_pubkey external
   ```
 
 - **Decrypt a message using a private key**:
   ```bash
-  go run main.go -decrypt my_private_key
+  ./GO-pgp -decrypt my_private_key
   ```
 
 ## Notes
