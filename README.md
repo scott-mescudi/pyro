@@ -10,7 +10,7 @@ This program provides a simple interface for managing PGP (Pretty Good Privacy) 
 - Decrypt messages using a private key.
 - Copy PGP keys to the clipboard.
 - List keys stored in different directories.
-
+- Generate a PGP keypair with no fields. (not recommended for long term use)
 ## Prerequisites
 
 - **Go** must be installed on your machine to run the program.
