@@ -145,11 +145,10 @@ func RemoveKey(file string, fle2 string) error {
 	return nil
 }
 
-func ListKeys(folder string, prefix string, isroot bool) {
+func ListKeys(folder string, prefix string, isroot bool) error {
 	files, err := os.ReadDir(folder)
 	if err != nil {
-		fmt.Printf("Failed to list directory '%s': %v\n", folder, err)
-		return
+		return fmt.Errorf("failed to list directory '%s': %v", folder, err)
 	}
 
 	if isroot {
@@ -170,6 +169,8 @@ func ListKeys(folder string, prefix string, isroot bool) {
 			ListKeys(filepath.Join(folder, entry.Name()), prefix+getIndent(i, len(files)-1), false)
 		}
 	}
+
+	return nil
 }
 
 func Move_key(file string, fle2 string) error {

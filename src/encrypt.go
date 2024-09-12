@@ -36,11 +36,23 @@ func main() {
 	if list && len(os.Args) == 3{
 		switch os.Args[2] {
 		case "pub":
-			m.ListKeys(filepath.Join(m.Dir, "external"), "", true)
+			if err := m.ListKeys(filepath.Join(m.Dir, "external"), "", true); err != nil {
+				m.Make_Dir()
+				fmt.Println(err)
+                return
+			}
 		case "vault":
-			m.ListKeys(filepath.Join(m.Dir, "vault"), "", true)
+			if err := m.ListKeys(filepath.Join(m.Dir, "vault"), "", true); err != nil {
+				m.Make_Dir()
+				fmt.Println(err)
+                return
+			}
 		case "all":
-			m.ListKeys(m.Dir, "", true)
+			if err := m.ListKeys(m.Dir, "", true); err != nil {
+				m.Make_Dir()
+				fmt.Println(err)
+                return
+			}
 
 		}
 	} else if ms2 && len(os.Args) == 2 {
