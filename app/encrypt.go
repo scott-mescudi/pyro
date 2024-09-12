@@ -381,6 +381,40 @@ func decrypt_message(key string) error {
 	return nil
 }
 
+func generateKeyPair() (string, string, error) {
+	entity, err := openpgp.NewEntity("", "", "", nil)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Serialize the private key.
+	var privateKeyBuf bytes.Buffer
+	privateKeyWriter, err := armor.Encode(&privateKeyBuf, openpgp.PrivateKeyType, nil)
+	if err != nil {
+		return "", "", err
+	}
+	err = entity.SerializePrivate(privateKeyWriter, nil)
+	if err != nil {
+		return "", "", err
+	}
+	privateKeyWriter.Close()
+
+	// Serialize the public key.
+	var publicKeyBuf bytes.Buffer
+	publicKeyWriter, err := armor.Encode(&publicKeyBuf, openpgp.PublicKeyType, nil)
+	if err != nil {
+		return "", "", err
+	}
+	err = entity.Serialize(publicKeyWriter)
+	if err != nil {
+		return "", "", err
+	}
+	publicKeyWriter.Close()
+
+	return publicKeyBuf.String(), privateKeyBuf.String(), nil
+}
+
+
 var helpMessage = `Usage of PGP Key Management Tool:
 -init
 	Initialize the PGP key directories.
@@ -432,6 +466,7 @@ func main() {
 		msg   bool
 		ms2   bool
 		start bool
+		generate bool
 	)
 
 	flag.StringVar(&list, "list", "", "List all PGP keys")
@@ -442,6 +477,7 @@ func main() {
 	flag.BoolVar(&msg, "encrypt", false, "Encrypt a message")
 	flag.BoolVar(&ms2, "decrypt", false, "Decrypt a message")
 	flag.BoolVar(&start, "init", false, "Start the PGP key management tool")
+	flag.BoolVar(&generate, "generate", false, "Generate a new PGP key pair")
 
 	flag.Parse()
 
@@ -514,8 +550,49 @@ func main() {
 		}
 
 		fmt.Println("Key added successfully")
-	} else {
+	} else if generate && len(os.Args) == 4{
+		pubkey, privkey, err := generateKeyPair()
+		if err != nil{
+			fmt.Println("Error generating key pair:", err)
+            return
+		}
+
+		pubPath := fmt.Sprintf("%v_pub.asc",os.Args[2])
+		privPath := fmt.Sprintf("%v_priv.asc",os.Args[3])
+
+		if pubkey == privPath {
+			fmt.Println("Error: Public and private key file names cannot be the same.")
+            return
+		}
+
+		file, err := os.Create(pubPath)
+		if err!= nil {
+            fmt.Println("Error creating private key file:", err)
+            return
+        }
+		file.Write([]byte(pubkey))
+
+		file, err = os.Create(privPath)
+		if err!= nil {
+            fmt.Println("Error creating private key file:", err)
+            return
+        }
+		file.Write([]byte(privkey))
+
+	}else {
 		fmt.Println(helpMessage)
 	}
 
 }
+
+	// publicKey, privateKey, err := generateKeyPair()
+	// if err != nil {
+	// 	fmt.Println("Error generating key pair:", err)
+	// 	return
+	// }
+
+	// file, _:= os.Create("anish_public.asc")
+	// file.Write([]byte(publicKey))
+
+	// file, _ = os.Create("anish_private.asc")
+	// file.Write([]byte(privateKey))
