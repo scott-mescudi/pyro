@@ -5,24 +5,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	m "pgp/app/modules"
-
+	m "pgp/src/modules"
 )
 
 func main() {
 	var (
-		list  string
-		move  bool
-		rmkey bool
-		copy  bool
-		add   bool
-		msg   bool
-		ms2   bool
-		start bool
+		list     bool
+		move     bool
+		rmkey    bool
+		copy     bool
+		add      bool
+		msg      bool
+		ms2      bool
+		start    bool
 		generate bool
 	)
 
-	flag.StringVar(&list, "list", "", "List all PGP keys")
+	flag.BoolVar(&list, "list", false, "List all PGP keys")
 	flag.BoolVar(&move, "mv", false, "Add a new PGP key")
 	flag.BoolVar(&rmkey, "rm", false, "Remove a PGP key")
 	flag.BoolVar(&copy, "copy", false, "Copy PGP key to clipboard")
@@ -33,18 +32,18 @@ func main() {
 	flag.BoolVar(&generate, "generate", false, "Generate a new PGP key pair")
 
 	flag.Parse()
+	
+	if list && len(os.Args) == 3{
+		switch os.Args[2] {
+		case "pub":
+			m.ListKeys(filepath.Join(m.Dir, "external"), "", true)
+		case "vault":
+			m.ListKeys(filepath.Join(m.Dir, "vault"), "", true)
+		case "all":
+			m.ListKeys(m.Dir, "", true)
 
-	switch list {
-	case "pub":
-		m.ListKeys(filepath.Join(m.Dir, "external"), "", true)
-	case "vault":
-		m.ListKeys(filepath.Join(m.Dir, "vault"), "", true)
-	case "all":
-		m.ListKeys(m.Dir, "", true)
-
-	}
-
-	if ms2 && len(os.Args) == 2 {
+		}
+	} else if ms2 && len(os.Args) == 2 {
 		err := m.Decrypt_message(os.Args[2])
 		if err != nil {
 			fmt.Println(err)
@@ -103,36 +102,36 @@ func main() {
 		}
 
 		fmt.Println("Key added successfully")
-	} else if generate && len(os.Args) == 4{
+	} else if generate && len(os.Args) == 4 {
 		pubkey, privkey, err := m.GenerateKeyPair()
-		if err != nil{
+		if err != nil {
 			fmt.Println("Error generating key pair:", err)
-            return
+			return
 		}
 
-		pubPath := fmt.Sprintf("%v_pub.asc",os.Args[2])
-		privPath := fmt.Sprintf("%v_priv.asc",os.Args[3])
+		pubPath := fmt.Sprintf("%v_pub.asc", os.Args[2])
+		privPath := fmt.Sprintf("%v_priv.asc", os.Args[3])
 
 		if pubkey == privPath {
 			fmt.Println("Error: Public and private key file names cannot be the same.")
-            return
+			return
 		}
 
 		file, err := os.Create(pubPath)
-		if err!= nil {
-            fmt.Println("Error creating private key file:", err)
-            return
-        }
+		if err != nil {
+			fmt.Println("Error creating private key file:", err)
+			return
+		}
 		file.Write([]byte(pubkey))
 
 		file, err = os.Create(privPath)
-		if err!= nil {
-            fmt.Println("Error creating private key file:", err)
-            return
-        }
+		if err != nil {
+			fmt.Println("Error creating private key file:", err)
+			return
+		}
 		file.Write([]byte(privkey))
 
-	}else {
+	} else {
 		fmt.Println(m.HelpMessage)
 	}
 

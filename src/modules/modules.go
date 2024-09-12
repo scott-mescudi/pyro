@@ -14,7 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 )
 
-var Dir = "D:\\pgp_messanger\\bin\\keys"
+var Dir = "/pgp_messanger/keys"
 
 func Make_Dir() {
 	Dirs := []string{
@@ -26,51 +26,50 @@ func Make_Dir() {
 	}
 
 	for _, i := range Dirs {
-		os.Mkdir(i, os.FileMode(0755))
+		if err := os.Mkdir(i, os.FileMode(0755)); err != nil && !os.IsExist(err) {
+			fmt.Printf("Error creating directory '%s': %v\n", i, err)
+		}
 	}
 }
 
 func EncryptMessage(message string, pubKeyPath string) (string, error) {
 	pubKeyFile, err := os.Open(pubKeyPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open public key file '%s': %w", pubKeyPath, err)
 	}
 	defer pubKeyFile.Close()
 
 	block, err := armor.Decode(pubKeyFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to decode armored public key file: %w", err)
 	}
 
 	entityList, err := openpgp.ReadKeyRing(block.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read public key ring: %w", err)
 	}
 
 	var encrypted bytes.Buffer
 	armorWriter, err := armor.Encode(&encrypted, "PGP MESSAGE", nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create armor writer: %w", err)
 	}
 
 	w, err := openpgp.Encrypt(armorWriter, entityList, nil, nil, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to encrypt message: %w", err)
 	}
 
-	_, err = w.Write([]byte(message))
-	if err != nil {
-		return "", err
+	if _, err := w.Write([]byte(message)); err != nil {
+		return "", fmt.Errorf("failed to write message: %w", err)
 	}
 
-	err = w.Close()
-	if err != nil {
-		return "", err
+	if err := w.Close(); err != nil {
+		return "", fmt.Errorf("failed to close encryption writer: %w", err)
 	}
 
-	err = armorWriter.Close()
-	if err != nil {
-		return "", err
+	if err := armorWriter.Close(); err != nil {
+		return "", fmt.Errorf("failed to close armor writer: %w", err)
 	}
 
 	return encrypted.String(), nil
@@ -79,78 +78,68 @@ func EncryptMessage(message string, pubKeyPath string) (string, error) {
 func DecryptMessage(encryptedMessage string, privKeyPath string, passphrase string) (string, error) {
 	privKeyFile, err := os.Open(privKeyPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open private key file '%s': %w", privKeyPath, err)
 	}
 	defer privKeyFile.Close()
 
-	// Decode the armored private key
 	block, err := armor.Decode(privKeyFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to decode armored private key file: %w", err)
 	}
 
-	// Parse the key
 	entityList, err := openpgp.ReadKeyRing(block.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read private key ring: %w", err)
 	}
 
 	entity := entityList[0]
 	if entity.PrivateKey != nil && entity.PrivateKey.Encrypted {
-		err := entity.PrivateKey.Decrypt([]byte(passphrase))
-		if err != nil {
-			return "", err
+		if err := entity.PrivateKey.Decrypt([]byte(passphrase)); err != nil {
+			return "", fmt.Errorf("failed to decrypt private key: %w", err)
 		}
 	}
 
 	for _, subkey := range entity.Subkeys {
 		if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
-			err := subkey.PrivateKey.Decrypt([]byte(passphrase))
-			if err != nil {
-				return "", err
+			if err := subkey.PrivateKey.Decrypt([]byte(passphrase)); err != nil {
+				return "", fmt.Errorf("failed to decrypt subkey: %w", err)
 			}
 		}
 	}
 
-	// Decode the armored encrypted message
 	block, err = armor.Decode(bytes.NewBufferString(encryptedMessage))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to decode armored message: %w", err)
 	}
 
-	// Decrypt the message
 	md, err := openpgp.ReadMessage(block.Body, entityList, nil, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read message: %w", err)
 	}
 
 	message, err := io.ReadAll(md.UnverifiedBody)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read message body: %w", err)
 	}
 
 	return string(message), nil
 }
 
 func RemoveKey(file string, fle2 string) error {
+	var err error
 	switch fle2 {
 	case "external":
-		err := os.Remove(filepath.Join(Dir, "external", file))
-		if err != nil {
-			return fmt.Errorf("error removing file: %v", err)
-		}
+		err = os.Remove(filepath.Join(Dir, "external", file))
 	case "vault-private":
-		err := os.Remove(filepath.Join(Dir, "vault/private", file))
-		if err != nil {
-			return fmt.Errorf("error removing file: %v", err)
-		}
+		err = os.Remove(filepath.Join(Dir, "vault/private", file))
 	case "vault-public":
-		err := os.Remove(filepath.Join(Dir, "vault/public", file))
-		if err != nil {
-			return fmt.Errorf("error removing file: %v", err)
-		}
+		err = os.Remove(filepath.Join(Dir, "vault/public", file))
 	default:
-		return fmt.Errorf("cannot remove %v in %v {allowed paths: 'pub', 'vault-private', 'vault-public'}", file, fle2)
+		return fmt.Errorf("invalid path '%v' for removing key '%v' {allowed paths: 'external', 'vault-private', 'vault-public'}", fle2, file)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error removing file '%v' from '%v': %w", file, fle2, err)
 	}
 
 	return nil
@@ -159,16 +148,15 @@ func RemoveKey(file string, fle2 string) error {
 func ListKeys(folder string, prefix string, isroot bool) {
 	files, err := os.ReadDir(folder)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Failed to list directory '%s': %v\n", folder, err)
+		return
 	}
 
-	// Print the starting folder name with a trailing slash
 	if isroot {
 		fmt.Printf("%s/\n", filepath.Base(folder))
 	}
 
 	for i, entry := range files {
-		// Determine the proper prefix
 		var newPrefix string
 		if i == len(files)-1 {
 			newPrefix = prefix + "└── "
@@ -176,99 +164,68 @@ func ListKeys(folder string, prefix string, isroot bool) {
 			newPrefix = prefix + "├── "
 		}
 
-		// Print the entry
 		fmt.Println(newPrefix + entry.Name())
 
-		// Recursively list subDirectories
 		if entry.IsDir() {
-			// Call listKeys recursively for Directories
 			ListKeys(filepath.Join(folder, entry.Name()), prefix+getIndent(i, len(files)-1), false)
 		}
 	}
 }
 
 func Move_key(file string, fle2 string) error {
-	_, err := os.Stat(file)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("file %s does not exist", file)
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return fmt.Errorf("file '%s' does not exist", file)
 	}
 
+	var err error
 	switch fle2 {
 	case "external":
 		err = os.Rename(file, filepath.Join(Dir, "external", filepath.Base(file)))
-		if err != nil {
-			return fmt.Errorf("error moving file: %v", err)
-		}
 	case "vault-private":
 		err = os.Rename(file, filepath.Join(Dir, "vault/private", filepath.Base(file)))
-		if err != nil {
-			return fmt.Errorf("error moving file: %v", err)
-		}
 	case "vault-public":
 		err = os.Rename(file, filepath.Join(Dir, "vault/public", filepath.Base(file)))
-		if err != nil {
-			return fmt.Errorf("error moving file: %v", err)
-		}
 	default:
-		return fmt.Errorf("cannot move %v -> %v {allowed paths: 'pub', 'vault-private', 'vault-public'}", file, fle2)
+		return fmt.Errorf("invalid destination '%v' for moving key '%v' {allowed paths: 'external', 'vault-private', 'vault-public'}", fle2, file)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error moving file '%v' to '%v': %w", file, fle2, err)
 	}
 
 	return nil
 }
 
 func Copy_file(filename, folder string) error {
+	var filePath string
 	switch folder {
 	case "external":
-		file, err := os.ReadFile(filepath.Join(Dir, "external", filename))
-		if err != nil {
-			return err
-		}
-
-		err = clipboard.WriteAll(string(file))
-		if err != nil {
-			return err
-		}
+		filePath = filepath.Join(Dir, "external", filename)
 	case "vault-private":
-		file, err := os.ReadFile(filepath.Join(Dir, "vault/private", filename))
-		if err != nil {
-			return err
-		}
-
-		err = clipboard.WriteAll(string(file))
-		if err != nil {
-			return err
-		}
-
+		filePath = filepath.Join(Dir, "vault/private", filename)
 	case "vault-public":
-		file, err := os.ReadFile(filepath.Join(Dir, "vault/public", filename))
-		if err != nil {
-			return err
-		}
-
-		err = clipboard.WriteAll(string(file))
-		if err != nil {
-			return err
-		}
-
+		filePath = filepath.Join(Dir, "vault/public", filename)
 	default:
-		return fmt.Errorf("path does not exist {allowed paths: 'external', 'vault-private', 'vault-public'}")
+		return fmt.Errorf("invalid folder '%v' {allowed paths: 'external', 'vault-private', 'vault-public'}", folder)
+	}
+
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading file '%v' from '%v': %w", filename, folder, err)
+	}
+
+	if err := clipboard.WriteAll(string(file)); err != nil {
+		return fmt.Errorf("error copying file '%v' to clipboard: %w", filename, err)
 	}
 
 	return nil
-}
-
-func getIndent(index, total int) string {
-	if index == total {
-		return "    " // last entry
-	}
-	return "│   " // not the last entry
 }
 
 func AddKey(path, folder string) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	var lines []string
 
-	fmt.Println("Type ':wq' on new line and press 'ENTER' to finish ")
+	fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish input.")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == ":wq" {
@@ -281,9 +238,7 @@ func AddKey(path, folder string) error {
 		return fmt.Errorf("error reading input: %w", err)
 	}
 
-	// Join lines into a single string with newline characters
 	content := strings.Join(lines, "\n")
-
 	var filePath string
 
 	switch folder {
@@ -292,33 +247,31 @@ func AddKey(path, folder string) error {
 	case "vault-private":
 		filePath = filepath.Join(Dir, "vault/private", path)
 	case "vault-public":
-		filePath = filepath.Join(Dir, "vault-public", path)
+		filePath = filepath.Join(Dir, "vault/public", path)
 	default:
-		return fmt.Errorf("cannot add %v in %v {allowed paths: 'external', 'vault-private', 'vault-public'}", path, folder)
+		return fmt.Errorf("invalid folder '%v' for adding key '%v' {allowed paths: 'external', 'vault-private', 'vault-public'}", folder, path)
 	}
 
-	// Create or open the file
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("error creating file: %w", err)
+		return fmt.Errorf("error creating file '%v': %w", filePath, err)
 	}
-	defer file.Close() // Ensure the file is closed after writing
+	defer file.Close()
 
-	// Write content to the file
 	if _, err := file.Write([]byte(content)); err != nil {
-		return fmt.Errorf("error writing to file: %w", err)
+		return fmt.Errorf("error writing to file '%v': %w", filePath, err)
 	}
 
 	return nil
 }
 
 func Encrypt_message(key string, gh string) error {
-	fmt.Printf("Please enter you message to encrypt: %v ", gh)
+	fmt.Printf("Please enter your message to encrypt for %v: ", gh)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	var lines []string
 
-	fmt.Println("Type ':wq' on new line and press 'ENTER' to finish")
+	fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish input.")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == ":wq" {
@@ -326,37 +279,38 @@ func Encrypt_message(key string, gh string) error {
 		}
 		lines = append(lines, line)
 	}
+
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading input: %w", err)
-	}
-	content := strings.Join(lines, "\n")
-
-	var keypath string
-	if gh == "vault-private" {
-		keypath = filepath.Join(Dir, "vault/private", key)
-	} else if gh == "vault-public" {
-		keypath = filepath.Join(Dir, "vault/public", key)
-	} else {
-		keypath = filepath.Join(Dir, "external", key)
+		return fmt.Errorf("error reading message input: %w", err)
 	}
 
-	encryptmsg, err := EncryptMessage(content, keypath)
+	message := strings.Join(lines, "\n")
+	encryptedMessage, err := EncryptMessage(message, key)
 	if err != nil {
 		return fmt.Errorf("error encrypting message: %w", err)
 	}
 
-	fmt.Println("\nEncrypted message is:\n", encryptmsg)
-	clipboard.WriteAll(encryptmsg)
+	fmt.Println("Encrypted Message:")
+	fmt.Println(encryptedMessage)
+
 	return nil
 }
 
+func getIndent(index, total int) string {
+	if index == total {
+		return "    "
+	}
+	return "│   "
+}
+
+
 func Decrypt_message(key string) error {
-	fmt.Printf("Please enter you message to decrypt: ")
+	fmt.Printf("Please enter your message to decrypt: ")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	var lines []string
 
-	fmt.Println("Type ':wq' on new line and press 'ENTER' to finish")
+	fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish.")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == ":wq" {
@@ -364,21 +318,31 @@ func Decrypt_message(key string) error {
 		}
 		lines = append(lines, line)
 	}
+
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading input: %w", err)
 	}
+
 	content := strings.Join(lines, "\n")
 	keypath := filepath.Join(Dir, "vault/private", key)
 
-	decryptmsg, err := DecryptMessage(content, keypath, "")
+	// Decrypt the message
+	decryptedMessage, err := DecryptMessage(content, keypath, "")
 	if err != nil {
 		return fmt.Errorf("error decrypting message: %w", err)
 	}
 
-	fmt.Println("\nDecrypted message is:\n", decryptmsg)
-	clipboard.WriteAll(decryptmsg)
+	// Print decrypted message
+	fmt.Println("\nDecrypted message is:\n", decryptedMessage)
+
+	// Copy to clipboard
+	if err := clipboard.WriteAll(decryptedMessage); err != nil {
+		return fmt.Errorf("error copying decrypted message to clipboard: %w", err)
+	}
+
 	return nil
 }
+
 
 func GenerateKeyPair() (string, string, error) {
 	entity, err := openpgp.NewEntity("", "", "", nil)
@@ -412,7 +376,6 @@ func GenerateKeyPair() (string, string, error) {
 
 	return publicKeyBuf.String(), privateKeyBuf.String(), nil
 }
-
 
 var HelpMessage = `Usage of PGP Key Management Tool:
 -init
