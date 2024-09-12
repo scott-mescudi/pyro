@@ -26,7 +26,7 @@ func Make_Dir() {
 	}
 
 	for _, i := range Dirs {
-		if err := os.Mkdir(i, os.FileMode(0755)); err != nil && !os.IsExist(err) {
+		if err := os.MkdirAll(i, os.FileMode(0755)); err != nil && !os.IsExist(err) {
 			fmt.Printf("Error creating directory '%s': %v\n", i, err)
 		}
 	}
@@ -266,25 +266,10 @@ func AddKey(path, folder string) error {
 }
 
 func Encrypt_message(key string, gh string) error {
-	fmt.Printf("Please enter your message to encrypt for %v: ", gh)
-
-	scanner := bufio.NewScanner(os.Stdin)
-	var lines []string
-
-	fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish input.")
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == ":wq" {
-			break
-		}
-		lines = append(lines, line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading message input: %w", err)
-	}
-
-	message := strings.Join(lines, "\n")
+	message, err := readInput("Please enter your message to encrypt: ")
+	if err!= nil {
+        return fmt.Errorf("error reading message input: %w", err)
+    }
 	encryptedMessage, err := EncryptMessage(message, key)
 	if err != nil {
 		return fmt.Errorf("error encrypting message: %w", err)
@@ -303,27 +288,34 @@ func getIndent(index, total int) string {
 	return "│   "
 }
 
+func readInput(prompt string) (string, error) {
+    fmt.Println(prompt)
+
+    scanner := bufio.NewScanner(os.Stdin)
+    var lines []string
+
+    fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish input.")
+    for scanner.Scan() {
+        line := scanner.Text()
+        if line == ":wq" {
+            break
+        }
+        lines = append(lines, line)
+    }
+
+    if err := scanner.Err(); err != nil {
+        return "", fmt.Errorf("error reading input: %w", err)
+    }
+
+    return strings.Join(lines, "\n"), nil
+}
+
 
 func Decrypt_message(key string) error {
-	fmt.Printf("Please enter your message to decrypt: ")
-
-	scanner := bufio.NewScanner(os.Stdin)
-	var lines []string
-
-	fmt.Println("Type ':wq' on a new line and press 'ENTER' to finish.")
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == ":wq" {
-			break
-		}
-		lines = append(lines, line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading input: %w", err)
-	}
-
-	content := strings.Join(lines, "\n")
+	content, err := readInput("Please enter your message to decrypt: ")
+	if err!= nil {
+        return fmt.Errorf("error reading message input: %w", err)
+    }
 	keypath := filepath.Join(Dir, "vault/private", key)
 
 	// Decrypt the message
