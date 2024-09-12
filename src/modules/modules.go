@@ -1,9 +1,8 @@
-package main
+package modules
 
 import (
 	"bufio"
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -15,10 +14,10 @@ import (
 	"github.com/atotto/clipboard"
 )
 
-var dir = "D:\\pgp_messanger\\bin\\keys"
+var Dir = "D:\\pgp_messanger\\bin\\keys"
 
-func make_dir() {
-	dirs := []string{
+func Make_Dir() {
+	Dirs := []string{
 		"keys",
 		"keys/external",
 		"keys/vault",
@@ -26,7 +25,7 @@ func make_dir() {
 		"keys/vault/public",
 	}
 
-	for _, i := range dirs {
+	for _, i := range Dirs {
 		os.Mkdir(i, os.FileMode(0755))
 	}
 }
@@ -133,20 +132,20 @@ func DecryptMessage(encryptedMessage string, privKeyPath string, passphrase stri
 	return string(message), nil
 }
 
-func removeKey(file string, fle2 string) error {
+func RemoveKey(file string, fle2 string) error {
 	switch fle2 {
 	case "external":
-		err := os.Remove(filepath.Join(dir, "external", file))
+		err := os.Remove(filepath.Join(Dir, "external", file))
 		if err != nil {
 			return fmt.Errorf("error removing file: %v", err)
 		}
 	case "vault-private":
-		err := os.Remove(filepath.Join(dir, "vault/private", file))
+		err := os.Remove(filepath.Join(Dir, "vault/private", file))
 		if err != nil {
 			return fmt.Errorf("error removing file: %v", err)
 		}
 	case "vault-public":
-		err := os.Remove(filepath.Join(dir, "vault/public", file))
+		err := os.Remove(filepath.Join(Dir, "vault/public", file))
 		if err != nil {
 			return fmt.Errorf("error removing file: %v", err)
 		}
@@ -157,7 +156,7 @@ func removeKey(file string, fle2 string) error {
 	return nil
 }
 
-func listKeys(folder string, prefix string, isroot bool) {
+func ListKeys(folder string, prefix string, isroot bool) {
 	files, err := os.ReadDir(folder)
 	if err != nil {
 		panic(err)
@@ -180,15 +179,15 @@ func listKeys(folder string, prefix string, isroot bool) {
 		// Print the entry
 		fmt.Println(newPrefix + entry.Name())
 
-		// Recursively list subdirectories
+		// Recursively list subDirectories
 		if entry.IsDir() {
-			// Call listKeys recursively for directories
-			listKeys(filepath.Join(folder, entry.Name()), prefix+getIndent(i, len(files)-1), false)
+			// Call listKeys recursively for Directories
+			ListKeys(filepath.Join(folder, entry.Name()), prefix+getIndent(i, len(files)-1), false)
 		}
 	}
 }
 
-func move_key(file string, fle2 string) error {
+func Move_key(file string, fle2 string) error {
 	_, err := os.Stat(file)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("file %s does not exist", file)
@@ -196,17 +195,17 @@ func move_key(file string, fle2 string) error {
 
 	switch fle2 {
 	case "external":
-		err = os.Rename(file, filepath.Join(dir, "external", filepath.Base(file)))
+		err = os.Rename(file, filepath.Join(Dir, "external", filepath.Base(file)))
 		if err != nil {
 			return fmt.Errorf("error moving file: %v", err)
 		}
 	case "vault-private":
-		err = os.Rename(file, filepath.Join(dir, "vault/private", filepath.Base(file)))
+		err = os.Rename(file, filepath.Join(Dir, "vault/private", filepath.Base(file)))
 		if err != nil {
 			return fmt.Errorf("error moving file: %v", err)
 		}
 	case "vault-public":
-		err = os.Rename(file, filepath.Join(dir, "vault/public", filepath.Base(file)))
+		err = os.Rename(file, filepath.Join(Dir, "vault/public", filepath.Base(file)))
 		if err != nil {
 			return fmt.Errorf("error moving file: %v", err)
 		}
@@ -217,10 +216,10 @@ func move_key(file string, fle2 string) error {
 	return nil
 }
 
-func copy_file(filename, folder string) error {
+func Copy_file(filename, folder string) error {
 	switch folder {
 	case "external":
-		file, err := os.ReadFile(filepath.Join(dir, "external", filename))
+		file, err := os.ReadFile(filepath.Join(Dir, "external", filename))
 		if err != nil {
 			return err
 		}
@@ -230,7 +229,7 @@ func copy_file(filename, folder string) error {
 			return err
 		}
 	case "vault-private":
-		file, err := os.ReadFile(filepath.Join(dir, "vault/private", filename))
+		file, err := os.ReadFile(filepath.Join(Dir, "vault/private", filename))
 		if err != nil {
 			return err
 		}
@@ -241,7 +240,7 @@ func copy_file(filename, folder string) error {
 		}
 
 	case "vault-public":
-		file, err := os.ReadFile(filepath.Join(dir, "vault/public", filename))
+		file, err := os.ReadFile(filepath.Join(Dir, "vault/public", filename))
 		if err != nil {
 			return err
 		}
@@ -265,7 +264,7 @@ func getIndent(index, total int) string {
 	return "│   " // not the last entry
 }
 
-func addKey(path, folder string) error {
+func AddKey(path, folder string) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	var lines []string
 
@@ -289,11 +288,11 @@ func addKey(path, folder string) error {
 
 	switch folder {
 	case "external":
-		filePath = filepath.Join(dir, "external", path)
+		filePath = filepath.Join(Dir, "external", path)
 	case "vault-private":
-		filePath = filepath.Join(dir, "vault/private", path)
+		filePath = filepath.Join(Dir, "vault/private", path)
 	case "vault-public":
-		filePath = filepath.Join(dir, "vault-public", path)
+		filePath = filepath.Join(Dir, "vault-public", path)
 	default:
 		return fmt.Errorf("cannot add %v in %v {allowed paths: 'external', 'vault-private', 'vault-public'}", path, folder)
 	}
@@ -313,7 +312,7 @@ func addKey(path, folder string) error {
 	return nil
 }
 
-func encrypt_message(key string, gh string) error {
+func Encrypt_message(key string, gh string) error {
 	fmt.Printf("Please enter you message to encrypt: %v ", gh)
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -334,11 +333,11 @@ func encrypt_message(key string, gh string) error {
 
 	var keypath string
 	if gh == "vault-private" {
-		keypath = filepath.Join(dir, "vault/private", key)
+		keypath = filepath.Join(Dir, "vault/private", key)
 	} else if gh == "vault-public" {
-		keypath = filepath.Join(dir, "vault/public", key)
+		keypath = filepath.Join(Dir, "vault/public", key)
 	} else {
-		keypath = filepath.Join(dir, "external", key)
+		keypath = filepath.Join(Dir, "external", key)
 	}
 
 	encryptmsg, err := EncryptMessage(content, keypath)
@@ -351,7 +350,7 @@ func encrypt_message(key string, gh string) error {
 	return nil
 }
 
-func decrypt_message(key string) error {
+func Decrypt_message(key string) error {
 	fmt.Printf("Please enter you message to decrypt: ")
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -369,7 +368,7 @@ func decrypt_message(key string) error {
 		return fmt.Errorf("error reading input: %w", err)
 	}
 	content := strings.Join(lines, "\n")
-	keypath := filepath.Join(dir, "vault/private", key)
+	keypath := filepath.Join(Dir, "vault/private", key)
 
 	decryptmsg, err := DecryptMessage(content, keypath, "")
 	if err != nil {
@@ -381,7 +380,7 @@ func decrypt_message(key string) error {
 	return nil
 }
 
-func generateKeyPair() (string, string, error) {
+func GenerateKeyPair() (string, string, error) {
 	entity, err := openpgp.NewEntity("", "", "", nil)
 	if err != nil {
 		return "", "", err
@@ -415,35 +414,35 @@ func generateKeyPair() (string, string, error) {
 }
 
 
-var helpMessage = `Usage of PGP Key Management Tool:
+var HelpMessage = `Usage of PGP Key Management Tool:
 -init
-	Initialize the PGP key directories.
+	Initialize the PGP key Directories.
 
--list <directory>
-	List all PGP keys in the specified directory.
+-list <Directory>
+	List all PGP keys in the specified Directory.
 	Available options: 'pub', 'vault', 'all'
 
--add <key_filename> <directory>
-	Add a new PGP key to the specified directory.
-	Available directories: 'external', 'vault-private', 'vault-public'
+-add <key_filename> <Directory>
+	Add a new PGP key to the specified Directory.
+	Available Directories: 'external', 'vault-private', 'vault-public'
 
--mv <file_path> <destination_directory>
-	Move a key file to the specified directory.
-	Available directories: 'external', 'vault-private', 'vault-public'
+-mv <file_path> <destination_Directory>
+	Move a key file to the specified Directory.
+	Available Directories: 'external', 'vault-private', 'vault-public'
 
--rm <key_filename> <directory>
-	Remove a PGP key from the specified directory.
-	Available directories: 'external', 'vault-private', 'vault-public'
+-rm <key_filename> <Directory>
+	Remove a PGP key from the specified Directory.
+	Available Directories: 'external', 'vault-private', 'vault-public'
 
--copy <key_filename> <directory>
+-copy <key_filename> <Directory>
 	Copy the content of a key file to the clipboard.
-	Available directories: 'external', 'vault-private', 'vault-public'
+	Available Directories: 'external', 'vault-private', 'vault-public'
 
--encrypt <key_filename> <directory>
+-encrypt <key_filename> <Directory>
 	Encrypt a message using the specified public key.
 
 -decrypt <key_filename>
-	Decrypt a message using the specified private key from 'vault-private' directory.
+	Decrypt a message using the specified private key from 'vault-private' Directory.
 
 Examples:
 go run main.go -init
@@ -455,144 +454,3 @@ go run main.go -copy mykey vault-private
 go run main.go -encrypt recipient_pubkey external
 go run main.go -decrypt my_private_key
 `
-
-func main() {
-	var (
-		list  string
-		move  bool
-		rmkey bool
-		copy  bool
-		add   bool
-		msg   bool
-		ms2   bool
-		start bool
-		generate bool
-	)
-
-	flag.StringVar(&list, "list", "", "List all PGP keys")
-	flag.BoolVar(&move, "mv", false, "Add a new PGP key")
-	flag.BoolVar(&rmkey, "rm", false, "Remove a PGP key")
-	flag.BoolVar(&copy, "copy", false, "Copy PGP key to clipboard")
-	flag.BoolVar(&add, "add", false, "Add a new PGP key")
-	flag.BoolVar(&msg, "encrypt", false, "Encrypt a message")
-	flag.BoolVar(&ms2, "decrypt", false, "Decrypt a message")
-	flag.BoolVar(&start, "init", false, "Start the PGP key management tool")
-	flag.BoolVar(&generate, "generate", false, "Generate a new PGP key pair")
-
-	flag.Parse()
-
-	switch list {
-	case "pub":
-		listKeys(filepath.Join(dir, "external"), "", true)
-	case "vault":
-		listKeys(filepath.Join(dir, "vault"), "", true)
-	case "all":
-		listKeys(dir, "", true)
-
-	}
-
-	if ms2 && len(os.Args) == 2 {
-		err := decrypt_message(os.Args[2])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println("Message decrypted successfully and copied to clipboard")
-	} else if start {
-		make_dir()
-	} else if msg {
-		if len(os.Args) > 3 {
-			err := encrypt_message(os.Args[2], os.Args[3])
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		} else {
-			err := encrypt_message(os.Args[2], "")
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
-
-		fmt.Println("Message encrypted successfully and copied to clipboard")
-
-	} else if move && len(os.Args) == 3 {
-		err := move_key(os.Args[2], os.Args[3])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println("Key added successfully")
-	} else if rmkey && len(os.Args) == 3 {
-		err := removeKey(os.Args[2], os.Args[3])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println("Key removed successfully")
-	} else if copy && len(os.Args) == 3 {
-		err := copy_file(os.Args[2], os.Args[3])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println("Key copied to clipboard successfully")
-	} else if add && len(os.Args) == 3 {
-		err := addKey(os.Args[2], os.Args[3])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println("Key added successfully")
-	} else if generate && len(os.Args) == 4{
-		pubkey, privkey, err := generateKeyPair()
-		if err != nil{
-			fmt.Println("Error generating key pair:", err)
-            return
-		}
-
-		pubPath := fmt.Sprintf("%v_pub.asc",os.Args[2])
-		privPath := fmt.Sprintf("%v_priv.asc",os.Args[3])
-
-		if pubkey == privPath {
-			fmt.Println("Error: Public and private key file names cannot be the same.")
-            return
-		}
-
-		file, err := os.Create(pubPath)
-		if err!= nil {
-            fmt.Println("Error creating private key file:", err)
-            return
-        }
-		file.Write([]byte(pubkey))
-
-		file, err = os.Create(privPath)
-		if err!= nil {
-            fmt.Println("Error creating private key file:", err)
-            return
-        }
-		file.Write([]byte(privkey))
-
-	}else {
-		fmt.Println(helpMessage)
-	}
-
-}
-
-	// publicKey, privateKey, err := generateKeyPair()
-	// if err != nil {
-	// 	fmt.Println("Error generating key pair:", err)
-	// 	return
-	// }
-
-	// file, _:= os.Create("anish_public.asc")
-	// file.Write([]byte(publicKey))
-
-	// file, _ = os.Create("anish_private.asc")
-	// file.Write([]byte(privateKey))
