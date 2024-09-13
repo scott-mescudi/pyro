@@ -1,4 +1,4 @@
-# PGP Key Management Tool - README
+# Pyro - README
 
 This program provides a simple interface for managing PGP (Pretty Good Privacy) keys, encrypting/decrypting messages, and organizing PGP key directories. It helps users handle their PGP keys and perform common cryptographic tasks like encryption, decryption, key addition, and removal.
 
@@ -10,10 +10,10 @@ This program provides a simple interface for managing PGP (Pretty Good Privacy) 
 - Decrypt messages using a private key.
 - Copy PGP keys to the clipboard.
 - List keys stored in different directories.
-- Generate a PGP keypair with no fields. (not recommended for long term use)
+- Generate a PGP keypair with empty fields. (not recommended for long term use)
 ## Prerequisites
 
-- **Go** must be installed on your machine to run the program.
+- **Go** must be installed on your machine to build/run the program.
 - **Clipboard support** is enabled using the `github.com/atotto/clipboard` package. Ensure your system supports clipboard operations.
 
 ## Directory Structure
