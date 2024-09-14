@@ -401,12 +401,12 @@ var HelpMessage = `Usage of PGP Key Management Tool:
 	Decrypt a message using the specified private key from 'vault-private' Directory.
 
 Examples:
-go run main.go -init
-go run main.go -list vault
-go run main.go -add mykey external
-go run main.go -mv mykey vault-private
-go run main.go -rm mykey external
-go run main.go -copy mykey vault-private
-go run main.go -encrypt recipient_pubkey external
-go run main.go -decrypt my_private_key
+./pyro -init
+./pyro -list vault
+./pyro -add mykey external
+./pyro -mv mykey vault-private
+./pyro -rm mykey external
+./pyro -copy mykey vault-private
+./pyro -encrypt recipient_pubkey external
+./pyro -decrypt my_private_key
 `
