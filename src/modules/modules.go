@@ -14,7 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 )
 
-var Dir = "/pgp_messanger/keys"
+var Dir = "/pyro/src/keys/"
 
 func Make_Dir() {
 	Dirs := []string{

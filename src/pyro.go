@@ -35,7 +35,7 @@ func main() {
 	
 	if list && len(os.Args) == 3{
 		switch os.Args[2] {
-		case "pub":
+		case "external":
 			if err := m.ListKeys(filepath.Join(m.Dir, "external"), "", true); err != nil {
 				m.Make_Dir()
 				fmt.Println(err)
