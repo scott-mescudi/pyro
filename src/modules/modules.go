@@ -267,17 +267,35 @@ func AddKey(path, folder string) error {
 }
 
 func Encrypt_message(key string, gh string) error {
+	var folder string
+	if gh == ""{
+		folder = "external"
+	}else if gh == "vault-private"{
+		folder = "vault/private"
+	}else if gh == "vault-public"{
+		folder = "vault/public"
+	}
+
+	filepath := filepath.Join(Dir, folder, key)
+	fmt.Println(filepath)
 	message, err := readInput("Please enter your message to encrypt: ")
 	if err!= nil {
         return fmt.Errorf("error reading message input: %w", err)
     }
-	encryptedMessage, err := EncryptMessage(message, key)
+
+	encryptedMessage, err := EncryptMessage(message, filepath)
 	if err != nil {
 		return fmt.Errorf("error encrypting message: %w", err)
 	}
 
 	fmt.Println("Encrypted Message:")
 	fmt.Println(encryptedMessage)
+	
+	// Copy to clipboard
+	if err := writeToClipboard(encryptedMessage); err != nil {
+		return err
+	}
+
 
 	return nil
 }
@@ -327,12 +345,20 @@ func Decrypt_message(key string) error {
 
 	// Print decrypted message
 	fmt.Println("\nDecrypted message is:\n", decryptedMessage)
-
+	
+	
 	// Copy to clipboard
-	if err := clipboard.WriteAll(decryptedMessage); err != nil {
-		return fmt.Errorf("error copying decrypted message to clipboard: %w", err)
+	if err := writeToClipboard(decryptedMessage); err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func writeToClipboard(message string) (error){
+	if err := clipboard.WriteAll(message); err != nil {
+		return fmt.Errorf("error copying decrypted message to clipboard: %w", err)
+	}
 	return nil
 }
 
